@@ -238,6 +238,7 @@ ERR:
 int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argument)
 {
     int err = 0;
+    int run_task_count = 0;
     threadpool_task_t *task;
     
     if (tp == NULL || function == NULL) {
@@ -246,11 +247,6 @@ int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argume
 
     if (pthread_mutex_lock(&tp->lock) != 0) {
         return THREADPOOL_LOCK_FAILURE;
-    }
-
-    if (tp->thread_queue.count > tp->max_thread_count) {
-        err = THREADPOOL_THREAD_MAX;
-        goto ERR;
     }
 
     if (tp->idle_task_queue.count == 0 && threadpool_new_task(tp) != THREADPOOL_OK) {
@@ -264,8 +260,10 @@ int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argume
     task->function = function;
     task->argument = argument;
 
-    if ((TP_QUEUE_COUNT(&tp->waiting_task_queue) + TP_QUEUE_COUNT(&tp->busying_task_queue)) >= TP_QUEUE_COUNT(&tp->thread_queue) &&
-                threadpool_new_thread(tp) != THREADPOOL_OK) {
+    run_task_count = TP_QUEUE_COUNT(&tp->waiting_task_queue) + TP_QUEUE_COUNT(&tp->busying_task_queue);
+    if (TP_QUEUE_COUNT(&tp->thread_queue) <= tp->max_thread_count && 
+            run_task_count >= TP_QUEUE_COUNT(&tp->thread_queue) &&
+            threadpool_new_thread(tp) != THREADPOOL_OK) {
         err = THREADPOOL_MEM_ERROR; 
         goto ERR;
     }
@@ -331,4 +329,11 @@ EXIT:
     pthread_exit(NULL);
 
     return NULL;
+}
+
+int threadpool_all_done(threadpool_t *tp)
+{
+    return tp != NULL &&
+            TP_QUEUE_COUNT(&tp->waiting_task_queue) == 0 && 
+            TP_QUEUE_COUNT(&tp->busying_task_queue) == 0;
 }

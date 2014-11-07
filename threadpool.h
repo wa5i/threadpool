@@ -62,4 +62,12 @@ int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argume
  */
 int threadpool_destroy(threadpool_t *tp, int shutdown);
 
+/**
+ * @function threadpool_all_done
+ * @brief all task whether has been done
+ * @param tp    Thread pool to judge
+ * @retrun 1 if all task has been done, otherwise return 0 
+ */
+int threadpool_all_done(threadpool_t *tp);
+
 #endif

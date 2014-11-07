@@ -13,7 +13,7 @@ void func(void *data)
     struct func_arg *d = (struct func_arg *)data;
 
     printf("data: %d\n", d->data);
-    //sleep(1);
+    sleep(1);
 }
 
 int main(int argc, char *argv[])
@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     threadpool_t *tp;
     struct func_arg *d;
 
-    tp = threadpool_create(5, 20);
+    tp = threadpool_create(2, 4);
     if (tp == NULL) {
         return -1;
     }
@@ -42,6 +42,11 @@ int main(int argc, char *argv[])
     threadpool_add_task(tp, func, d+2);
     threadpool_add_task(tp, func, d+3);
     threadpool_add_task(tp, func, d+4);
+
+    printf("all task has been done: %d\n", threadpool_all_done(tp));
+
+    sleep(2);
+    printf("all task has been done: %d\n", threadpool_all_done(tp));
 
     threadpool_destroy(tp, 0);
     //threadpool_destroy(tp, 1);
