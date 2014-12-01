@@ -64,7 +64,7 @@ struct threadpool {
     tp_queue_t busying_task_queue;
     tp_queue_t idle_task_queue;
 
-    int max_thread_count;
+    unsigned int max_thread_count;
     int shutdown;
 };
 
@@ -238,7 +238,7 @@ ERR:
 int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argument)
 {
     int err = 0;
-    int run_task_count = 0;
+    unsigned int run_task_count = 0;
     threadpool_task_t *task;
     
     if (tp == NULL || function == NULL) {
