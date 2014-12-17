@@ -2,7 +2,7 @@
  * Copyright (c) 2014, Jusse Wang <wanyco@gmail.com>.
  * All rights reserved.
  *
- * @date: 2014-11-06 
+ * @date: 2014-11-06
  * @file threadpool.c
  * @brief Threadpool implementation file
  *
@@ -23,7 +23,7 @@
 #define TP_LIST_ISEMPTY(h) ((h)->count == 0)
 
 #define TP_LIST_ENQUEUE(h, e) TP_LIST_ADD(h, e)
-#define TP_LIST_DEQUEUE(h, pt) ({ struct list *__e1 = (!TP_LIST_ISEMPTY(h)) ? TP_LIST_DEL(h, (h)->head.n) : NULL; (__e1 ? LIST_ELEM(__e1, pt, entry) : NULL); }) 
+#define TP_LIST_DEQUEUE(h, pt) ({ struct list *__e1 = (!TP_LIST_ISEMPTY(h)) ? TP_LIST_DEL(h, (h)->head.n) : NULL; (__e1 ? LIST_ELEM(__e1, pt, entry) : NULL); })
 
 #define TP_TASK_ENQUEUE(h, e) TP_LIST_ENQUEUE(h, &((e)->entry))
 #define TP_TASK_DEQUEUE(h) TP_LIST_DEQUEUE(h, threadpool_task_t *)
@@ -102,7 +102,7 @@ int threadpool_free(threadpool_t *tp)
     pthread_mutex_lock(&tp->lock);
     pthread_mutex_destroy(&tp->lock);
     pthread_cond_destroy(&tp->wait);
-    
+
     free(tp);
 
     return THREADPOOL_OK;
@@ -112,7 +112,7 @@ int threadpool_destroy(threadpool_t *tp, int shutdown)
 {
     int err = THREADPOOL_OK;
     threadpool_pthread_t *thread;
-    
+
     if (tp == NULL) {
         return THREADPOOL_INVALID;
     }
@@ -135,7 +135,7 @@ int threadpool_destroy(threadpool_t *tp, int shutdown)
             err = THREADPOOL_LOCK_FAILURE;
             break;
         }
-        
+
         /* Wait all worker thread exit */
         tp_queue_foreach(thread, &tp->thread_queue) {
             if (pthread_join(thread->thread, NULL) != 0) {
@@ -212,6 +212,9 @@ threadpool_t *threadpool_create(int count, int max_count)
     TP_LIST_INIT(&tp->waiting_task_queue);
     TP_LIST_INIT(&tp->idle_task_queue);
 
+    tp->max_thread_count = max_count;
+    tp->shutdown = __SHUTDOWN_DEFAULT;
+
     for (i = 0; i < count; i++) {
         if (threadpool_new_thread(tp) != THREADPOOL_OK || threadpool_new_task(tp) != THREADPOOL_OK) {
             goto ERR;
@@ -221,9 +224,6 @@ threadpool_t *threadpool_create(int count, int max_count)
     if (pthread_mutex_init(&tp->lock, NULL) != 0 || pthread_cond_init(&tp->wait, NULL) != 0) {
         goto ERR;
     }
-
-    tp->max_thread_count = max_count;
-    tp->shutdown = __SHUTDOWN_DEFAULT;
 
     return tp;
 
@@ -240,7 +240,7 @@ int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argume
     int err = 0;
     unsigned int run_task_count = 0;
     threadpool_task_t *task;
-    
+
     if (tp == NULL || function == NULL) {
         return err;
     }
@@ -261,10 +261,10 @@ int threadpool_add_task(threadpool_t *tp, void (*function)(void *), void *argume
     task->argument = argument;
 
     run_task_count = TP_QUEUE_COUNT(&tp->waiting_task_queue) + TP_QUEUE_COUNT(&tp->busying_task_queue);
-    if (TP_QUEUE_COUNT(&tp->thread_queue) <= tp->max_thread_count && 
+    if (TP_QUEUE_COUNT(&tp->thread_queue) <= tp->max_thread_count &&
             run_task_count >= TP_QUEUE_COUNT(&tp->thread_queue) &&
             threadpool_new_thread(tp) != THREADPOOL_OK) {
-        err = THREADPOOL_MEM_ERROR; 
+        err = THREADPOOL_MEM_ERROR;
         goto ERR;
     }
 
@@ -334,6 +334,6 @@ EXIT:
 int threadpool_all_done(threadpool_t *tp)
 {
     return tp != NULL &&
-            TP_QUEUE_COUNT(&tp->waiting_task_queue) == 0 && 
+            TP_QUEUE_COUNT(&tp->waiting_task_queue) == 0 &&
             TP_QUEUE_COUNT(&tp->busying_task_queue) == 0;
 }
